@@ -13,6 +13,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { validateWindowsPackage, assertWindowsX64 } from './validate-windows-package.mjs'
 
 const WIN_BIN = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'build', 'win-bin', 'better_sqlite3.node')
 
@@ -41,8 +42,10 @@ export default async function afterPack(context) {
     'better-sqlite3', 'build', 'Release', 'better_sqlite3.node',
   )
   if (!fs.existsSync(target)) throw new Error(`未找到待替换的 better_sqlite3.node: ${target}`)
+  assertWindowsX64(WIN_BIN)
   fs.copyFileSync(WIN_BIN, target)
   // 顺手清掉宿主机平台预编译残留（bindings 不会命中，但白占体积）
   fs.rmSync(path.join(path.dirname(path.dirname(path.dirname(target))), 'bin'), { recursive: true, force: true })
   console.log(`[after-pack] win32 better_sqlite3.node 已替换为 PE 二进制 (${(fs.statSync(target).size / 1024 / 1024).toFixed(1)}MB)`)
+  validateWindowsPackage(resourcesDir, context.packager.info.framework.version)
 }

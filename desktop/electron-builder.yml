@@ -18,7 +18,7 @@ asarUnpack:
 extraResources:
   - { from: resources/frontend, to: frontend }
   - { from: resources/workspace-template, to: workspace-template }
-  # ${os} 宏：darwin → bin-darwin/（无扩展名二进制），win32 → bin-win32/（.exe），
+  # ${os} 宏：mac → bin-mac/（无扩展名二进制），win → bin-win/（.exe），
   # 各自只带本平台的 ffmpeg/ffprobe
   - { from: "resources/bin-${os}", to: bin }
 npmRebuild: true
