@@ -12,7 +12,11 @@
 
 **中英双语 / Bilingual** | [简体中文](README.zh-CN.md) | [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
-<h2>🔑 <a href="https://api.firemux.cn">获取 Huobao API Key / Get a Huobao API Key</a></h2>
+<p>
+  <a href="https://api.firemux.cn">
+    <img src="docs/images/api-key-cta.svg" width="380" alt="立即获取 FireMux API Key / Get your API key" />
+  </a>
+</p>
 
 **文本 · 图片 · 视频全部 AI 能力，一个 Key 即可开通**<br>
 **Text, image, and video AI capabilities — one key unlocks everything**
@@ -20,8 +24,16 @@
 部署完成后，在「设置 → 火宝快捷配置」粘贴 Key，一键写入三条推荐配置。<br>
 After deploying, paste the key in "Settings → Huobao Quick Setup" to write three recommended configs in one click.
 
-<h3>📥 <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">下载桌面版 / Download Desktop App (macOS / Windows)</a></h3>
-<h3>🌐 <a href="https://www.firemux.cn">官方网站 / Official Website</a></h3>
+<p>
+  <a href="https://github.com/chatfire-AI/huobao-drama/releases/latest">
+    <img src="docs/images/desktop-download-cta.svg" width="380" alt="立即下载桌面版 / Download Desktop App (macOS / Windows)" />
+  </a>
+</p>
+<p>
+  <a href="https://www.firemux.cn">
+    <img src="docs/images/website-cta.svg" width="320" alt="访问 FireMux 官网 / Visit the official website" />
+  </a>
+</p>
 
 </div>
 
