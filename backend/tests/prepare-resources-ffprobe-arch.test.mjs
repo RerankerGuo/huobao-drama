@@ -26,11 +26,13 @@ test('prepare-resources defines detectArchMismatch and exits on mismatch', () =>
   assert.match(script, /process\.exit\(1\)/)
 })
 
-test('detectArchMismatch is called on the macOS ffmpeg/ffprobe pair after copy', () => {
-  // 必须放在 copyFileSync 之后，覆盖 bin-mac/ffmpeg + bin-mac/ffprobe
+test('detectArchMismatch runs on each bin-mac-<arch> ffmpeg/ffprobe pair after prepareMacMedia', () => {
+  // master 已改为 prepare-mac-media 按架构下载（lipo 逐个校验）；自检需
+  // 覆盖最终产物 resources/bin-mac-arm64 与 bin-mac-x64 两个目录。
+  assert.match(script, /prepareMacMedia\(DESKTOP, RES\)[\s\S]*?for \(const macArch of \['arm64', 'x64'\]\)/)
   assert.match(
     script,
-    /fs\.copyFileSync\([\s\S]*?detectArchMismatch\(['"]ffmpeg['"], path\.join\(binMac, ['"]ffmpeg['"]\), ['"]ffprobe['"], path\.join\(binMac, ['"]ffprobe['"]\)\)/,
+    /detectArchMismatch\(['"]ffmpeg['"], path\.join\(binMac, ['"]ffmpeg['"]\), ['"]ffprobe['"], path\.join\(binMac, ['"]ffprobe['"]\)\)/,
   )
 })
 
@@ -40,9 +42,9 @@ test('error message references the #135 issue and gives actionable hints', () =>
   assert.match(script, /rm -rf node_modules/)
 })
 
-// 反向断言：不能在 ffmpeg-static / ffprobe-static 缺失时静默放过
-test('existing missing-binary error path is preserved', () => {
-  assert.match(script, /ffmpeg-static\/ffprobe-static 二进制缺失/)
+// 反向断言：mac 二进制缺失时不能静默放过
+test('missing mac binary fails the packaging run', () => {
+  assert.match(script, /缺少 macOS/)
   assert.match(script, /process\.exit\(1\)/)
 })
 

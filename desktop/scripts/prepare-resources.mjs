@@ -3,7 +3,7 @@
  *
  * 1. frontend/           ← nuxt generate 产物（.output/public，含 index.html）
  * 2. workspace-template/ ← backend/workspace（skills + prompts，首启动拷入 userData）
- * 3. bin-<os>/           ← ffmpeg/ffprobe 按平台分目录（electron-builder ${os} 宏各取所需，
+ * 3. bin-<os>-<arch>/    ← ffmpeg/ffprobe 按平台与架构分目录（electron-builder 宏各取所需，
  *                          避免 mac 包带 exe、win 包带 mac 二进制白白 +144MB）
  */
 import fs from 'fs'
@@ -11,6 +11,7 @@ import path from 'path'
 import { execFileSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import { createRequire } from 'module'
+import { prepareMacMedia } from './prepare-mac-media.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DESKTOP = path.resolve(__dirname, '..')
@@ -76,31 +77,28 @@ const workspaceSrc = path.join(REPO, 'backend', 'workspace')
 fs.cpSync(workspaceSrc, path.join(RES, 'workspace-template'), { recursive: true })
 console.log('resources/workspace-template ✓')
 
-// 3. ffmpeg 二进制（macOS/Linux 用 ffmpeg-static 当前平台的产物；
-//    Windows 交叉打包：ffmpeg.exe 从 ffmpeg-static GitHub release 获取（本地缓存），
-//    ffprobe.exe 直接用 ffprobe-static 自带的 win32/x64 产物）
+// 3. macOS 两种架构独立准备；ffprobe-static 的 arm64 目录实际可能含 x64 二进制，
+//    因此两种媒体工具统一使用 ffmpeg-static 对应版本的官方发布产物。
 const req = createRequire(import.meta.url)
-const binMac = path.join(RES, 'bin-mac')
-const binWin = path.join(RES, 'bin-win')
-fs.mkdirSync(binMac, { recursive: true })
+if (process.platform === 'darwin') await prepareMacMedia(DESKTOP, RES)
+const binWin = path.join(RES, 'bin-win-x64')
 fs.mkdirSync(binWin, { recursive: true })
-const ffmpegPath = req('ffmpeg-static')
-const ffprobePath = req('ffprobe-static')?.path
-if (!ffmpegPath || !ffprobePath || !fs.existsSync(ffmpegPath) || !fs.existsSync(ffprobePath)) {
-  console.error('ffmpeg-static/ffprobe-static 二进制缺失，请重新 npm install（或配置 FFMPEG_BINARIES_URL 镜像）')
-  process.exit(1)
+// 3a. 架构自检（#135）：prepareMacMedia 下载时已用 lipo 逐个校验产物架构，
+//     这里对最终拷入 resources/bin-mac-<arch>/ 的 ffmpeg/ffprobe 再做一次
+//     同架构交叉验证，防止 build/mac-bin 缓存或镜像产物被替换后混入异架构
+//     二进制（无 Rosetta 的 Apple Silicon 上 spawn 即报 bad CPU type）。
+if (process.platform === 'darwin') {
+  for (const macArch of ['arm64', 'x64']) {
+    const binMac = path.join(RES, `bin-mac-${macArch}`)
+    for (const name of ['ffmpeg', 'ffprobe']) {
+      if (!fs.existsSync(path.join(binMac, name))) {
+        console.error(`[prepare-resources] 缺少 macOS ${macArch} ${name}：prepare-mac-media 未产出该二进制（#135），请清理 desktop/build/mac-bin 缓存后重试`)
+        process.exit(1)
+      }
+    }
+    detectArchMismatch('ffmpeg', path.join(binMac, 'ffmpeg'), 'ffprobe', path.join(binMac, 'ffprobe'))
+  }
 }
-fs.copyFileSync(ffmpegPath, path.join(binMac, 'ffmpeg'))
-fs.copyFileSync(ffprobePath, path.join(binMac, 'ffprobe'))
-fs.chmodSync(path.join(binMac, 'ffmpeg'), 0o755)
-fs.chmodSync(path.join(binMac, 'ffprobe'), 0o755)
-
-// 3a. 架构自检：ffmpeg 和 ffprobe 必须都是本机架构（避免 #135：ffprobe-static v3.1.0
-//     在某些 install 配置下会取出错误架构的二进制，最典型就是 darwin/arm64 install
-//     后 bin/darwin/arm64/ffprobe 实际是 x86_64，导致无 Rosetta 的 Apple Silicon 拼接
-//     失败。`file` 命令在任何 macOS / Linux 都自带，不引新依赖。
-detectArchMismatch('ffmpeg', path.join(binMac, 'ffmpeg'), 'ffprobe', path.join(binMac, 'ffprobe'))
-console.log('resources/bin-mac ✓')
 
 // 3b. Windows 二进制（打 win 包用；不打 win 包时缺失不报错，仅提示）
 const winBinDir = path.join(DESKTOP, 'build', 'win-bin')
@@ -113,5 +111,5 @@ if (!fs.existsSync(ffmpegWin)) {
 if (fs.existsSync(ffmpegWin) && fs.existsSync(ffprobeWinSrc)) {
   fs.copyFileSync(ffmpegWin, path.join(binWin, 'ffmpeg.exe'))
   fs.copyFileSync(ffprobeWinSrc, path.join(binWin, 'ffprobe.exe'))
-  console.log('resources/bin-win ✓')
+  console.log('resources/bin-win-x64 ✓')
 }
